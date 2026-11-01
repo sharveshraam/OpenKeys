@@ -147,6 +147,7 @@ export interface ProjectData {
 
 export type WorkspaceTab =
   | 'studio'
+  | 'drums'
   | 'synth'
   | 'theory'
   | 'eartraining'

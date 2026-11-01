@@ -16,6 +16,7 @@ import {
   Music,
   Sparkles,
   Piano,
+  Flame,
 } from 'lucide-react';
 import {
   EnharmonicPreference,
@@ -177,6 +178,14 @@ export const TopTransportBar: React.FC<TopTransportBarProps> = ({
           >
             <Music size={15} />
             <span>Studio & Grid</span>
+          </button>
+          <button
+            type="button"
+            className={`nav-tab ${activeTab === 'drums' ? 'active' : ''}`}
+            onClick={() => onSelectTab('drums')}
+          >
+            <Flame size={15} />
+            <span>Drums & Arp</span>
           </button>
           <button
             type="button"

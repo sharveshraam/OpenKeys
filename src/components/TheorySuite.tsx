@@ -45,6 +45,7 @@ type TheorySubTab =
   | 'chords'
   | 'progressions'
   | 'circle'
+  | 'fretboard'
   | 'intervals';
 
 interface TheorySuiteProps {
@@ -101,6 +102,9 @@ export const TheorySuite: React.FC<TheorySuiteProps> = ({
   const [intervalMidiA, setIntervalMidiA] = useState<number>(60); // C4
   const [intervalMidiB, setIntervalMidiB] = useState<number>(67); // G4
   const [freqFilterOctave, setFreqFilterOctave] = useState<number | 'all'>(4);
+  const [fretboardTuning, setFretboardTuning] = useState<
+    'guitar_std' | 'guitar_dropd' | 'bass_4' | 'ukulele'
+  >('guitar_std');
 
   const scaleDef = SCALES[scaleId];
   const scaleNotes = useMemo(
@@ -308,6 +312,14 @@ export const TheorySuite: React.FC<TheorySuiteProps> = ({
         >
           <Compass size={14} />
           <span>Circle of Fifths</span>
+        </button>
+        <button
+          type="button"
+          className={`theory-subtab ${subTab === 'fretboard' ? 'active' : ''}`}
+          onClick={() => setSubTab('fretboard')}
+        >
+          <Disc size={14} />
+          <span>Guitar & Bass Fretboard</span>
         </button>
         <button
           type="button"
@@ -1238,6 +1250,134 @@ export const TheorySuite: React.FC<TheorySuiteProps> = ({
                 <strong>{keySigInfo.diminishedLabel}</strong>
                 <small>Resolves strongly to Tonic</small>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 4.5: INTERACTIVE GUITAR / BASS / UKULELE FRETBOARD */}
+      {subTab === 'fretboard' && (
+        <div className="theory-card">
+          <div className="theory-card-header">
+            <div>
+              <h3>
+                Interactive Guitar, Bass & Ukulele Fretboard (
+                {getPitchClassName(
+                  rootPitchClass,
+                  enharmonic,
+                  rootPitchClass,
+                  scaleId
+                )}{' '}
+                {scaleDef.name})
+              </h3>
+              <p className="theory-subtitle">
+                Click any fret position to play the note · Cyan badges mark the
+                Root note, Violet badges mark scale tones
+              </p>
+            </div>
+            <div className="btn-group">
+              {(
+                [
+                  { id: 'guitar_std', label: '6-String Guitar (E A D G B E)' },
+                  { id: 'guitar_dropd', label: 'Drop D Guitar (D A D G B E)' },
+                  { id: 'bass_4', label: '4-String Bass (E A D G)' },
+                  { id: 'ukulele', label: 'Ukulele (G C E A)' },
+                ] as const
+              ).map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  className={`chip-btn ${
+                    fretboardTuning === t.id ? 'active-chip' : ''
+                  }`}
+                  onClick={() => setFretboardTuning(t.id)}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="fretboard-scroll-wrap">
+            <div className="fretboard-board">
+              {/* Fret Number Header */}
+              <div className="fretboard-string-row fret-numbers-row">
+                <div className="fret-open-label">OPEN</div>
+                {Array.from({ length: 15 }, (_, fIdx) => {
+                  const fret = fIdx + 1;
+                  const isMarker = [3, 5, 7, 9, 12, 15].includes(fret);
+                  return (
+                    <div
+                      key={fret}
+                      className={`fret-cell-header ${
+                        isMarker ? 'fret-marker-col' : ''
+                      }`}
+                    >
+                      {fret}
+                      {fret === 12 ? ' ••' : isMarker ? ' •' : ''}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {(fretboardTuning === 'guitar_std'
+                ? [64, 59, 55, 50, 45, 40]
+                : fretboardTuning === 'guitar_dropd'
+                ? [64, 59, 55, 50, 45, 38]
+                : fretboardTuning === 'bass_4'
+                ? [43, 38, 33, 28]
+                : [69, 64, 60, 67]
+              ).map((openMidi, sIdx) => (
+                <div
+                  key={`${openMidi}-${sIdx}`}
+                  className="fretboard-string-row"
+                >
+                  {/* Open String (Fret 0) */}
+                  {Array.from({ length: 16 }, (_, fret) => {
+                    const midi = openMidi + fret;
+                    const pc = normalizePitchClass(midi);
+                    const isRoot = pc === normalizePitchClass(rootPitchClass);
+                    const inScale = scaleDef.intervals.includes(
+                      normalizePitchClass(pc - rootPitchClass)
+                    );
+                    const label = midiToNoteName(
+                      midi,
+                      enharmonic,
+                      rootPitchClass,
+                      scaleId
+                    );
+                    return (
+                      <button
+                        key={fret}
+                        type="button"
+                        className={[
+                          'fret-cell',
+                          fret === 0 ? 'fret-zero-nut' : '',
+                          isRoot
+                            ? 'fret-root'
+                            : inScale
+                            ? 'fret-in-scale'
+                            : 'fret-out-scale',
+                        ]
+                          .filter(Boolean)
+                          .join(' ')}
+                        onClick={() =>
+                          soundEngine.triggerNote(
+                            midi,
+                            0.55,
+                            0.85,
+                            synthParams
+                          )
+                        }
+                        title={`${label} (Fret ${fret})`}
+                      >
+                        <span className="fret-string-wire" />
+                        <span className="fret-note-dot">{label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
             </div>
           </div>
         </div>
